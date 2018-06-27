@@ -85,10 +85,10 @@
         $('#submit').on('click', function () {
             event.preventDefault();
     
-            let trainName = $('#train-name').val();
-            let destination = $('#destination').val();
-            let firstTrain = $('#first-train').val();
-            let frequency = $('#frequency').val();
+            let trainName = $('#train-name').val().trim();
+            let destination = $('#destination').val().trim();
+            let firstTrain = $('#first-train').val().trim();
+            let frequency = $('#frequency').val().trim();
 
             let newTrain = {
                 name: trainName,
@@ -98,19 +98,66 @@
             };
 
             DATABASE.ref().push(newTrain);
+
+            $('#train-name').val('');
+            $('#destination').val('');
+            $('#first-train').val('');
+            $('#frequency').val('');
         });
 
         function pullData() {
             DATABASE.ref().on('child_added', function (snapshot) {
                 let child = snapshot.val();
 
+                //Set first train arrival and store it in a moment
+                let firstTrain = child.firstTrain;
+                let timeSplit = firstTrain.split(':');
+                let firstTrainArrival = moment().set('hours', parseInt(timeSplit[0])).set('minutes', parseInt(timeSplit[1]));
+
+                //Compare both current time with first train time to see if train has already arrived, if it has //then based on the frequency show when the train will arrive, if it hasn't then show when first //train will arrive
+                let firstTrainMilli = firstTrainArrival.milliseconds(0).valueOf();
+                let currentMilli = moment().valueOf();
+                let nextArrival;
+
+                function timeChecker(){
+                    if (firstTrainMilli > currentMilli){
+                        return firstTrainArrival.format('HH:mm A');
+                    } else if (firstTrainMilli === currentMilli){
+                        return firstTrainArrival.format('HH:mm A');
+                    } else {
+                        let minutes = child.frequency;
+                        nextArrival = moment().set('minutes', minutes);
+                        return nextArrival.format('HH:mm A');
+                    }
+                }
+                
+                //Set a new moment to now and compare it to when the first train will arrive if train has already //arrived then set the time to when the next one will arrive based on frequency. 
+                let newMoment = moment();
+                let difference;
+
+                function diffChecker(){
+                    if (currentMilli > firstTrainMilli){
+                        difference = nextArrival.diff(newMoment, 'minutes');
+                        return difference;
+                    } else if (currentMilli < firstTrainMilli){
+                        difference = firstTrainArrival.diff(newMoment, 'minutes');
+                        return difference;
+                    } else {
+                        return 0;
+                    }
+
+
+                }
+
+
+
                 let newRow = $('<tr>').html(
                     `
                         <th scope="row">${child.name}</th>
                         <td>${child.destination}</td>
                         <td>${child.frequency}</td>
-                        <td>${nextArrival(child.frequency)}</td>
-                        <td>${minsAway(nextArrival(child.frequency))} min</td>
+                        <td>${timeChecker()}</td>
+                        <td>${diffChecker()} min</td>
                         <td><button class="btn btn-danger delete" id="${snapshot.key}">X</button></td>
                     `
                 );
@@ -118,20 +165,8 @@
                 newRow.attr('data-id', snapshot.key);
 
                 $('#table-data').append(newRow);
+                
             });
-        }
-
-        function nextArrival(min) {
-            let currentTime = moment();
-            currentTime.add(min, 'm');
-            return currentTime.format('HH:mm a');
-        }
-        
-        function minsAway(time){
-            let trainArrivTime = moment(time, 'HH:mm');
-            let hoursAway = trainArrivTime.hours() - moment().hours();
-            let minAway = trainArrivTime.minutes() - moment().minutes();
-            return (hoursAway * 60) + minAway;
         }
 
         pullData();
