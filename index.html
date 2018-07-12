@@ -111,18 +111,17 @@
 
                 //Set first train arrival and store it in a moment
                 let firstTrain = child.firstTrain;
-                let timeSplit = firstTrain.split(':');
-                let firstTrainArrival = moment().set('hours', parseInt(timeSplit[0])).set('minutes', parseInt(timeSplit[1]));
-
+                // let timeSplit = firstTrain.split(':');
+                let firstTrainArrival = moment(firstTrain, 'HH:mm A');
+                let freq = parseInt(child.frequency);
                 //Compare both current time with first train time to see if train has already arrived, if it has //then based on the frequency show when the train will arrive, if it hasn't then show when first //train will arrive
-                let firstTrainMilli = firstTrainArrival.milliseconds(0).valueOf();
-                let currentMilli = moment().valueOf();
+                let currentMoment = moment();
                 let nextArrival;
 
                 function timeChecker(){
-                    if (firstTrainMilli > currentMilli){
-                        return firstTrainArrival.format('HH:mm A');
-                    } else if (firstTrainMilli === currentMilli){
+                    if (firstTrain.isSameOrBefore(currentMoment, 'minute')){
+                        return firstTrainArrival.format('HH:mm A');//add frquency to moment if it is same or before                                                 arrival time
+                    } else if (firstTrainMilli === currentMoment){
                         return firstTrainArrival.format('HH:mm A');
                     } else {
                         let minutes = child.frequency;
@@ -136,10 +135,10 @@
                 let difference;
 
                 function diffChecker(){
-                    if (currentMilli > firstTrainMilli){
+                    if (currentMoment > firstTrainMilli){
                         difference = nextArrival.diff(newMoment, 'minutes');
                         return difference;
-                    } else if (currentMilli < firstTrainMilli){
+                    } else if (currentMoment < firstTrainMilli){
                         difference = firstTrainArrival.diff(newMoment, 'minutes');
                         return difference;
                     } else {
