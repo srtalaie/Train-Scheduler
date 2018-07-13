@@ -117,35 +117,25 @@
                 //Compare both current time with first train time to see if train has already arrived, if it has //then based on the frequency show when the train will arrive, if it hasn't then show when first //train will arrive
                 let currentMoment = moment();
                 let nextArrival;
-
+                console.log('First: ', firstTrainArrival, firstTrainArrival.unix());
+                console.log('Current: ', currentMoment, currentMoment.unix());
+                console.log('Freq:', freq);
                 function timeChecker(){
-                    if (firstTrain.isSameOrBefore(currentMoment, 'minute')){
-                        return firstTrainArrival.format('HH:mm A');//add frquency to moment if it is same or before                                                 arrival time
-                    } else if (firstTrainMilli === currentMoment){
+                    let newTime;
+                    if (currentMoment.unix() > firstTrainArrival.unix()){
+                        do {
+                            newTime = firstTrainArrival.add(freq, 'minutes');
+                        } while (firstTrainArrival.unix() <= currentMoment.unix());
+
+                        console.log("New Time:", moment(newTime, 'HH:mm'));
+                        return newTime.format('HH:mm A');
+                    } if (firstTrainArrival.unix() > currentMoment.unix()){
                         return firstTrainArrival.format('HH:mm A');
-                    } else {
-                        let minutes = child.frequency;
-                        nextArrival = moment().set('minutes', minutes);
-                        return nextArrival.format('HH:mm A');
                     }
                 }
-                
                 //Set a new moment to now and compare it to when the first train will arrive if train has already //arrived then set the time to when the next one will arrive based on frequency. 
-                let newMoment = moment();
-                let difference;
-
-                function diffChecker(){
-                    if (currentMoment > firstTrainMilli){
-                        difference = nextArrival.diff(newMoment, 'minutes');
-                        return difference;
-                    } else if (currentMoment < firstTrainMilli){
-                        difference = firstTrainArrival.diff(newMoment, 'minutes');
-                        return difference;
-                    } else {
-                        return 0;
-                    }
-
-
+                function minutesAwayChecker(){
+                    return firstTrainArrival.diff(currentMoment, 'minutes');
                 }
 
 
@@ -156,7 +146,7 @@
                         <td>${child.destination}</td>
                         <td>${child.frequency}</td>
                         <td>${timeChecker()}</td>
-                        <td>${diffChecker()} min</td>
+                        <td>${minutesAwayChecker()} min</td>
                         <td><button class="btn btn-danger delete" id="${snapshot.key}">X</button></td>
                     `
                 );
